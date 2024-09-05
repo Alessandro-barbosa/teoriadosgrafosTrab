@@ -1,4 +1,4 @@
-def balanceda(arvore, no):
+def isBalanceda(arvore, no):
     esquerda = contarAltura(arvore, arvore[no][0])
     direita = contarAltura(arvore, arvore[no][1])
     diferenca = esquerda - direita
@@ -25,7 +25,7 @@ def contarAltura(arvore, no):
     else:
         return 0;
 
-def isBinario(arvore, no):
+def isBinaria(arvore, no):
     if arvore[no] is not None:
         if len(arvore[no]) > 2:
             return False
@@ -58,6 +58,14 @@ def isCheia(arvore, no):
             return isCheia(arvore, arvore[no][0]) and isCheia(arvore, arvore[no][1])
     return True
 
+def isCompleta(arvore, no):
+    if no is not None and arvore[no] is not None:
+        if arvore[no][0] is None and arvore[no][1] is not None:
+            return False
+        return isCompleta(arvore, arvore[no][0]) and isCompleta(arvore,arvore[no][1])
+    else:
+        return True
+
 arvoreTeste = {
     'A': ['B', 'C'],
     'B': ['D', 'E'],
@@ -75,7 +83,7 @@ arvoreDegen = {
     'C': ['D', None],
     'D': None
 }
-arvoreComp = {
+arvoreCheia = {
     'A': ['B', 'C'],
     'B': ['D', 'E'],
     'C': ['G', 'F'],
@@ -84,8 +92,17 @@ arvoreComp = {
     'G': None,
     'F': None
 }
+arvoreComp = {
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': [None, 'F'],
+    'D': None,
+    'E': None,
+    'F': None,
+}
 
-print("Balanceada? : " + str(balanceda(arvoreTeste, 'A')))
+print("Balanceada? : " + str(isBalanceda(arvoreTeste, 'A')))
 print("Binária? : " + str(isBinario(arvoreTeste, 'A')))
 print("Degenerada? : " + str(isDegenerada(arvoreTeste, 'A')))
-print("Cheia? : " + str(isCheia(arvoreComp, 'A')))
+print("Cheia? : " + str(isCheia(arvoreCheia, 'A')))
+print("Completa? : " + str(isCompleta(arvoreComp, 'A')))
