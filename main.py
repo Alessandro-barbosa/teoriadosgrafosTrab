@@ -10,7 +10,7 @@ def ordem(arvore, no):
     if arvore[no] != None:
         if arvore[no][0] != None:
             ordem(arvore, arvore[no][0])  
-            print(no, end = " ")
+        print(no, end = " ")
         if(arvore[no][1] != None):
             ordem(arvore, arvore[no][1])    
     else:
@@ -28,11 +28,11 @@ def posOrdem(arvore, no):
 
 def exercicioA():
     print("Caminho em pré-ordem: ")
-    caminhoRED(arvoreTeste, 'A')
+    caminhoRED(arvoreTeste2, 'A')
     print("\nCaminho em Ordem: ")
-    ordem(arvoreTeste, 'A')
+    ordem(arvoreTeste2, 'A')
     print("\nCaminho em pós-ordem")
-    posOrdem(arvoreTeste, 'A')
+    posOrdem(arvoreTeste2, 'A')
 
 def exercicioB():
     return None
@@ -53,13 +53,12 @@ arvoreTeste = {
     'G': None
 }
 
-arvoreTeste2 = {
+arvoreTeste2 = {    
     'A': ['B', 'C'],
     'B': ['D', 'E'],
     'C': ['G', 'H'],
     'D': ['I', 'J'],
     'E': ['K', 'L'],
-    'F': ['M', 'N'],
     'G': ['O', 'P'],
     'H': ['Q', 'R'],
     'I': ['S', None],
