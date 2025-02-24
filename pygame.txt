@@ -1,0 +1,426 @@
+import pygame
+import sys
+
+pygame.init()
+
+# Configuração da tela
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption('Grafos Árvores')
+
+# Cores
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+GRAY = (200, 200, 200)
+
+# Memória
+arvore = {}
+posicoes_nos = {}
+linhas = []
+primeiro_no = None
+raiz = None
+contadorResultado = 0
+
+# Modos
+MODO_ADD_NO = 0
+MODO_ADD_LINHA = 1
+MODO_RESULTADO = 2
+MODO_LIMPAR = 3
+modo = MODO_ADD_NO
+
+escrevendo_no = False
+posicao_temporaria = None
+espera_nome_no = False
+tela_resultado = False
+
+nome_atual_no = ""  # Armazena temporariamente o nome do nó
+no_temporario = None  # Armazena temporariamente o nó sendo desenhado
+mensagem_erro = ""  # Variável global para armazenar a mensagem de erro
+
+# Função para desenhar um botão
+def draw_button(text, x, y, w, h, active):
+    color = RED if active else GRAY
+    pygame.draw.rect(screen, color, (x, y, w, h))
+    font = pygame.font.Font(None, 36)
+    text_surface = font.render(text, True, WHITE)
+    text_rect = text_surface.get_rect(center=(x + w // 2, y + h // 2))
+    screen.blit(text_surface, text_rect)
+
+# Função para desenhar um nó
+def draw_no(x, y, nome=None):
+    pygame.draw.circle(screen, BLUE, (x, y), 20)
+    if nome:
+        font = pygame.font.Font(None, 24)
+        text_surface = font.render(str(nome), True, WHITE)
+        screen.blit(text_surface, (x - 10, y - 10))
+
+# Função para adicionar um nó à árvore
+def adicionar_no(nome, x, y):
+    global mensagem_erro  # Declarando mensagem_erro como global
+    global raiz
+    if nome in arvore:
+        mensagem_erro = "Já existe um nó com esse nome."
+        return
+    arvore[nome] = []
+    posicoes_nos[nome] = (x, y)
+    mensagem_erro = ""  # Limpar a mensagem de erro se a adição for bem-sucedida
+    if raiz is None:
+        raiz = nome
+
+# Função para desenhar todas as linhas entre os nós
+def draw_linhas():
+    for linha in linhas:
+        pygame.draw.line(screen, BLACK, linha[0], linha[1], 2)
+
+# Função para desenhar texto
+def draw_text_input(text, x, y, cor):
+    font = pygame.font.Font(None, 36)
+    text_surface = font.render(text, True, cor)
+    screen.blit(text_surface, (x, y))
+
+# Função para verificar se o clique foi em algum nó existente
+def escolha_no(posicoes_nos, x, y):
+    for nome, (no_x, no_y) in posicoes_nos.items():
+        if (no_x - x) ** 2 + (no_y - y) ** 2 <= 20 ** 2:  # 20 é o raio do nó
+            return nome
+    return None
+
+def adicionar_linha(no1, no2):
+    global mensagem_erro
+
+    if no1 in arvore and no2 in arvore:
+        if no2 is None or no1 is None:
+            mensagem_erro = "Erro: Tentativa de adicionar uma linha entre um nó inválido."
+            return
+
+        print(f"Adicionando linha entre {no1} e {no2}")
+
+        no2_x = posicoes_nos[no2][0]  # Posição x do filho
+        no1_x = posicoes_nos[no1][0]  # Posição x do pai
+
+        # Se o nó não tem filhos, adiciona à esquerda ou à direita
+        if len(arvore[no1]) == 0:
+            if no1_x > no2_x:
+                arvore[no1].append(no2)  # Esquerda
+                arvore[no1].append(None)  # Preenche direita com None
+            else:
+                arvore[no1].append(None)  # Preenche esquerda com None
+                arvore[no1].append(no2)  # Direita
+
+        # Se já tem um ou mais filhos
+        else:
+            # Coloca à esquerda ou direita apenas se ainda tem espaço
+            if len(arvore[no1]) == 1:  # Se só tem um filho
+                if arvore[no1][0] is None and no1_x > no2_x:
+                    arvore[no1][0] = no2  # Coloca à esquerda se ainda está vazio
+                else:
+                    arvore[no1].append(no2)  # Coloca à direita
+
+            elif len(arvore[no1]) == 2:  # Se já tem dois filhos
+                if arvore[no1][0] is None:
+                    arvore[no1][0] = no2  # Adiciona à esquerda se estiver vazio
+                elif arvore[no1][1] is None:
+                    arvore[no1][1] = no2  # Adiciona à direita se estiver vazio
+                else:
+                    arvore[no1].append(no2)  # Adiciona mais filhos além dos dois primeiros
+
+            else:
+                arvore[no1].append(no2)  # Adiciona filhos adicionais além dos dois primeiros
+
+        # Adicionar a linha visualmente, se ainda não existir
+        if (posicoes_nos[no1], posicoes_nos[no2]) not in linhas:
+            linhas.append((posicoes_nos[no1], posicoes_nos[no2]))
+
+    else:
+        mensagem_erro = "Erro: Um ou ambos os nós não existem na árvore."
+
+
+def limparListas():
+    listaOrdem.clear()
+    listaPreOrdem.clear()
+    listaPosOrdem.clear()
+
+listaPreOrdem = []
+listaOrdem = []
+listaPosOrdem = []
+def preOrdem(arvore, no):
+    if no is None:
+        return
+    listaPreOrdem.append(no)
+    print(no, end=" ")
+    if arvore[no] is not None:
+        for filho in arvore[no]:
+            if filho is not None:
+                preOrdem(arvore, filho)
+
+
+def ordem(arvore, no):
+    if no is None:
+        return
+
+    # verifica se o nó atual tem filhos
+    if arvore[no] is not None:
+        filhos = arvore[no]
+
+        if len(filhos) > 0 and filhos[0] is not None:
+            ordem(arvore, filhos[0])
+        print(no, end=" ")
+        listaOrdem.append(no)
+        # filhos restantes
+        for filho in filhos[1:]:
+            if filho is not None:
+                ordem(arvore, filho)
+    else:
+        listaOrdem.append(no)
+        print(no, end=" ")  # não tendo filhos, imprime o nó
+
+
+def posOrdem(arvore, no):
+    if no is None:
+        return
+    # nó existente na árvore
+    if no in arvore:
+        filhos = arvore[no]
+        if filhos is not None:
+            for filho in filhos:
+                if filho is not None:
+                    posOrdem(arvore, filho)
+
+    # imprime o no raiz após todos
+    listaPosOrdem.append(no)
+    print(no, end=" ")
+
+
+# Funções de verificar a árvore
+def contarAltura(arvore, no):
+    if no not in arvore or len(arvore[no]) == 0:
+        return 0  # Se não há filhos, altura é 0
+
+    # Calcular a altura de cada subárvore recursivamente
+    alturas_filhos = [contarAltura(arvore, filho) for filho in arvore[no]]
+
+    # Retornar a maior altura + 1 (para incluir o nó atual)
+    return max(alturas_filhos) + 1
+
+def isBinario(arvore, no):
+    # Se o nó atual não existir na árvore, retorna True (não tem filhos para verificar)
+    if no not in arvore:
+        return True
+
+    # Verificar se o nó tem mais de 2 filhos
+    if len(arvore[no]) > 2:
+        return False
+
+    # Verificar recursivamente os filhos, se existirem
+    for filho in arvore[no]:
+        if not isBinario(arvore, filho):
+            return False
+
+    return True
+
+def isDegenerada(arvore, no):
+    if no not in arvore or len(arvore[no]) == 0:
+        return True  # Não tem filhos, é degenerada
+
+    if len(arvore[no]) > 1 and not None in arvore[no]:
+        return False  # Tem mais de um filho, não é degenerada
+
+    # Se chegou aqui, o nó tem exatamente um filho, verificar recursivamente
+    return isDegenerada(arvore, arvore[no][0])
+
+
+def isBalanceda(arvore, no):
+    if no not in arvore or len(arvore[no]) == 0:
+        return True
+    esquerda = contarAltura(arvore, arvore[no][0]) if len(arvore[no]) > 0 else 0
+    direita = contarAltura(arvore, arvore[no][1]) if len(arvore[no]) > 1 else 0
+    diferenca = abs(esquerda - direita)
+
+    # Verificar se a diferença de altura é maior que 1
+    if diferenca > 1:
+        return False
+    # Verificar recursivamente se as subárvores também são balanceadas
+    for filho in arvore[no]:
+        if filho is not None and not isBalanceda(arvore, filho):
+            return False
+    return True
+
+def isCheia(arvore, no):
+    if no not in arvore:
+        return True
+    filhos = arvore[no]
+    if len(filhos) == 0:
+        return True
+    if len(filhos) != 2 or None in arvore[no]:
+        return False
+    return isCheia(arvore, filhos[0]) and isCheia(arvore, filhos[1])
+
+def isCompleta(arvore, no):
+    if no not in arvore or len(arvore[no]) == 0:
+        return True
+    filhos = arvore[no]
+    if len(filhos) == 2 and filhos[0] is None and filhos[1] is not None:
+        return False
+
+    no_esquerda = filhos[0] if len(filhos) > 0 else None
+    no_direita = filhos[1] if len(filhos) > 1 else None
+
+    return isCompleta(arvore, no_esquerda) and isCompleta(arvore, no_direita)
+
+# Loop principal
+while True:
+    screen.fill(WHITE)
+
+    # Desenhar todas as linhas
+    draw_linhas()
+
+    # Desenhar todos os nós
+    for nome, pos in posicoes_nos.items():
+        draw_no(pos[0], pos[1], nome)
+
+    # Nó imediato depois do click
+    if no_temporario:
+        draw_no(no_temporario[0], no_temporario[1])
+
+    # Verificar eventos
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+        if event.type == pygame.MOUSEBUTTONDOWN and not espera_nome_no:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+
+            # Verificar se clicou no botão "Adicionar Nó"
+            if 20 <= mouse_x <= 260 and 20 <= mouse_y <= 90:
+                modo = MODO_ADD_NO
+
+            # Verificar se clicou no botão "Adicionar Linha"
+            if 280 <= mouse_x <= 520 and 20 <= mouse_y <= 90:
+                modo = MODO_ADD_LINHA
+
+            if 540 <= mouse_x <= 780 and 20 <= mouse_y <= 90:
+                modo = MODO_RESULTADO
+                contadorResultado = 0
+                limparListas()
+
+            if 540 <= mouse_x <= 780 and 510 <= mouse_y <= 580:
+                modo = MODO_LIMPAR
+                limparListas()
+                contadorResultado = 0
+                arvore.clear()  # Limpa a árvore
+                posicoes_nos.clear()  # Limpa as posições dos nós
+                linhas.clear()  # Limpa as linhas
+                primeiro_no = None  # Redefine o primeiro nó
+                tela_resultado = False
+                raiz = None
+
+            # Adicionando nó
+            if modo == MODO_ADD_NO:
+                tela_resultado = False
+                # Evitar colocar nós em cima dos botões
+                if (mouse_x < 0 or mouse_x > 800) or (mouse_y > 110) or (510 <= mouse_y <= 580):
+                    no_temporario = (mouse_x, mouse_y)  # Armazena temporariamente a posição do nó
+                    espera_nome_no = True  # Ativa o modo de espera para o nome do nó
+
+            # Adicionando linha
+            if modo == MODO_ADD_LINHA:
+                tela_resultado = False
+                no_clicado = escolha_no(posicoes_nos, mouse_x, mouse_y)
+                if no_clicado:
+                    if primeiro_no is None:
+                        primeiro_no = no_clicado  # Armazenar o primeiro nó
+                    else:
+                        if primeiro_no is not None and no_clicado is not None:  # Verificar se os dois nós são válidos
+                            adicionar_linha(primeiro_no, no_clicado)
+                        else:
+                            print("Erro: Nó inválido selecionado.")
+                        primeiro_no = None  # Resetar a seleção após desenhar a linha
+
+            if modo == MODO_RESULTADO:
+                tela_resultado = True
+
+        # Input do texto do nó digitado
+        if (event.type == pygame.KEYDOWN) and espera_nome_no:
+            if event.key == pygame.K_BACKSPACE:
+                nome_atual_no = nome_atual_no[:-1]
+            elif (event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER) and nome_atual_no:
+                adicionar_no(nome_atual_no, no_temporario[0], no_temporario[1])
+                nome_atual_no = ""
+                espera_nome_no = False
+                no_temporario = None
+            else:
+                nome_atual_no += event.unicode
+
+    # Desenhar botões
+    draw_button("Adicionar Nó", 20, 20, 240, 70, modo == MODO_ADD_NO)
+    draw_button("Adicionar Linha", 280, 20, 240, 70, modo == MODO_ADD_LINHA)
+    draw_button("Resultados", 540, 20, 240, 70, modo == MODO_RESULTADO)
+    draw_button("Limpar Árvore", 540, 510, 240, 70, modo == MODO_LIMPAR)
+
+    # Se estiver esperando o nome do nó, desenhar o campo de texto
+    if espera_nome_no:
+        draw_text_input(f"Nome do nó: {nome_atual_no}", 18, 98, WHITE)
+        draw_text_input(f"Nome do nó: {nome_atual_no}", 22, 98, WHITE)
+        draw_text_input(f"Nome do nó: {nome_atual_no}", 18, 102, WHITE)
+        draw_text_input(f"Nome do nó: {nome_atual_no}", 22, 102, WHITE)
+        draw_text_input(f"Nome do nó: {nome_atual_no}", 20, 100, BLACK)
+
+    draw_text_input("O primeiro nó adicionado vai ser a raiz!", 18, 518, WHITE)
+    draw_text_input("O primeiro nó adicionado vai ser a raiz!", 22, 518, WHITE)
+    draw_text_input("O primeiro nó adicionado vai ser a raiz!", 18, 522, WHITE)
+    draw_text_input("O primeiro nó adicionado vai ser a raiz!", 22, 522, WHITE)
+    draw_text_input("O primeiro nó adicionado vai ser a raiz!", 20, 520, BLACK)
+
+    draw_text_input("Ao adicionar linha, clique no pai primeiro!", 18, 548, WHITE)
+    draw_text_input("Ao adicionar linha, clique no pai primeiro!", 22, 548, WHITE)
+    draw_text_input("Ao adicionar linha, clique no pai primeiro!", 18, 552, WHITE)
+    draw_text_input("Ao adicionar linha, clique no pai primeiro!", 22, 552, WHITE)
+    draw_text_input("Ao adicionar linha, clique no pai primeiro!", 20, 550, BLACK)
+
+    # Exibir mensagem de erro se existir
+    if mensagem_erro:
+        draw_text_input(mensagem_erro, 18, 148, WHITE)
+        draw_text_input(mensagem_erro, 22, 148, WHITE)
+        draw_text_input(mensagem_erro, 18, 152, WHITE)
+        draw_text_input(mensagem_erro, 22, 152, WHITE)
+        draw_text_input(mensagem_erro, 20, 150, RED)
+
+    if tela_resultado:
+        contadorResultado += 1
+        pygame.draw.rect(screen, GRAY, (0, 110, 800, 590))
+
+        draw_text_input("Altura da árvore: {}".format(str(contarAltura(arvore, raiz))),280, 130, BLACK)
+
+        if isBinario(arvore, raiz) and raiz is not None:
+            draw_text_input("A árvore é binária", 50, 210, BLACK)
+            if isBalanceda(arvore, raiz) and not (isDegenerada(arvore, raiz) and contarAltura(arvore, raiz) > 1):
+                draw_text_input("A árvore é balanceada", 50, 250, BLACK)
+            else:
+                draw_text_input("A árvore não é balanceada", 50, 250, BLACK)
+            if isCheia(arvore, raiz):
+                draw_text_input("A árvore é cheia", 50, 290, BLACK)
+            else:
+                draw_text_input("A árvore não é cheia", 50, 290, BLACK)
+            if isCompleta(arvore, raiz):
+                draw_text_input("A árvore é completa", 50, 330, BLACK)
+            else:
+                draw_text_input("A árvore não é completa", 50, 330, BLACK)
+        elif isBinario(arvore, raiz) is False:
+            draw_text_input("A árvore não é binária", 50, 210, BLACK)
+
+        if isDegenerada(arvore, raiz) and raiz is not None:
+            draw_text_input("A árvore é degenerada", 50, 370, BLACK)
+
+        if contadorResultado == 1:
+            preOrdem(arvore, raiz)
+            ordem(arvore, raiz)
+            posOrdem(arvore, raiz)
+            print(f"Arvore: {arvore}")
+            print(f"posições: {posicoes_nos}")
+        draw_text_input(f"percurso em Pré-ordem: {listaPreOrdem}", 20, 460, BLACK)
+        draw_text_input(f"Percurso em Ordem: {listaOrdem}", 20, 500, BLACK)
+        draw_text_input(f"Percurso em Pos-Ordem: {listaPosOrdem}", 20, 540, BLACK)
+    # Atualizar a tela
+    pygame.display.flip()
